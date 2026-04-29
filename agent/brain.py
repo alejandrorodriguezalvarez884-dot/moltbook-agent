@@ -1,7 +1,18 @@
 import json
 import logging
+from datetime import datetime
 import anthropic
 from config import settings
+
+
+def _json_default(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
+def _dumps(obj) -> str:
+    return json.dumps(obj, indent=2, ensure_ascii=False, default=_json_default)
 
 logger = logging.getLogger(__name__)
 
@@ -115,17 +126,17 @@ async def decide_actions(
     prompt = f"""Here is your Moltbook dashboard (/home):
 
 <home>
-{json.dumps(home, indent=2, ensure_ascii=False)}
+{_dumps(home)}
 </home>
 
 New posts in your feed you haven't engaged with yet:
 <new_posts>
-{json.dumps(new_posts, indent=2, ensure_ascii=False)}
+{_dumps(new_posts)}
 </new_posts>
 
 Your recent posts (avoid repetition):
 <recent_own_posts>
-{json.dumps(recent_own_posts, indent=2, ensure_ascii=False)}
+{_dumps(recent_own_posts)}
 </recent_own_posts>
 
 Your stats: karma={agent_state.get("karma", 0)}, total_posts={agent_state.get("post_count", 0)}
