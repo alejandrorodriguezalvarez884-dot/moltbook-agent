@@ -1,143 +1,143 @@
 # Moltbook Agent 🤖
 
-Agente autónomo de IA que vive en **[Moltbook](https://www.moltbook.com)** — la red social construida exclusivamente para agentes de IA.
+An autonomous AI agent that lives on **[Moltbook](https://www.moltbook.com)** — the social network built exclusively for AI agents.
 
-El agente usa **Claude (Anthropic)** como modelo de razonamiento, se despliega en **Google Cloud Run** y se activa cada 5 minutos mediante **Cloud Scheduler**.
+The agent uses **Claude (Anthropic)** as its reasoning model, deploys on **Google Cloud Run**, and is triggered every 5 minutes via **Cloud Scheduler**.
 
 ---
 
-## Arquitectura
+## Architecture
 
 ```
-Cloud Scheduler (cada 5 min)
+Cloud Scheduler (every 5 min)
         │
         ▼  POST /heartbeat
   Cloud Run (FastAPI)
         │
-        ├── brain.py       → genera respuestas con Claude
-        ├── memory.py      → persiste estado en Firestore
-        ├── moltbook_client.py → API de Moltbook
-        └── register.py    → registro del agente al arrancar
+        ├── brain.py           → generates responses with Claude
+        ├── memory.py          → persists state in Firestore
+        ├── moltbook_client.py → Moltbook API client
+        └── register.py        → registers the agent on startup
 ```
 
-**Secrets** (API keys) se guardan en **Secret Manager** — nunca en el código.
+**Secrets** (API keys) are stored in **Secret Manager** — never in the code.
 
 ---
 
-## Estructura del proyecto
+## Project structure
 
 ```
 moltbook-agent/
 ├── agent/
-│   ├── main.py             # FastAPI app (endpoints /health y /heartbeat)
-│   ├── heartbeat.py        # Lógica principal del ciclo del agente
-│   ├── brain.py            # Integración con Claude (Anthropic)
-│   ├── memory.py           # Persistencia en Firestore
-│   ├── moltbook_client.py  # Cliente HTTP de la API de Moltbook
-│   ├── register.py         # Auto-registro del agente en Moltbook
-│   ├── config.py           # Configuración via variables de entorno
+│   ├── main.py             # FastAPI app (/health and /heartbeat endpoints)
+│   ├── heartbeat.py        # Main logic of the agent cycle
+│   ├── brain.py            # Claude (Anthropic) integration
+│   ├── memory.py           # Firestore persistence
+│   ├── moltbook_client.py  # Moltbook HTTP API client
+│   ├── register.py         # Auto-registration on Moltbook at startup
+│   ├── config.py           # Configuration via environment variables
 │   ├── Dockerfile
 │   └── requirements.txt
-├── deploy.sh               # Script de despliegue en GCP (Cloud Run)
-├── deploy.env.example      # Plantilla de configuración de despliegue
+├── deploy.sh               # GCP deployment script (Cloud Run)
+├── deploy.env.example      # Deployment configuration template
 └── README.md
 ```
 
 ---
 
-## Variables de entorno
+## Environment variables
 
-### Para desarrollo local — crea `agent/.env`
+### For local development — create `agent/.env`
 
 ```dotenv
-MOLTBOOK_API_KEY=tu_api_key_de_moltbook
+MOLTBOOK_API_KEY=your_moltbook_api_key
 MOLTBOOK_BASE_URL=https://www.moltbook.com/api/v1
-ANTHROPIC_API_KEY=tu_api_key_de_anthropic
+ANTHROPIC_API_KEY=your_anthropic_api_key
 
-AGENT_NAME=MiAgente
-AGENT_DESCRIPTION="Un agente de IA en Moltbook"
+AGENT_NAME=MyAgent
+AGENT_DESCRIPTION="An AI agent on Moltbook"
 TARGET_SUBMOLTS=general,agents,aitools
 
-GCP_PROJECT_ID=tu-proyecto-gcp   # opcional en local
+GCP_PROJECT_ID=your-gcp-project   # optional for local development
 ```
 
-> ⚠️ **Nunca subas `.env` al repositorio.** Está incluido en `.gitignore`.
+> ⚠️ **Never commit `.env` to the repository.** It is included in `.gitignore`.
 
-### Para despliegue — crea `deploy.env` a partir de la plantilla
+### For deployment — create `deploy.env` from the template
 
 ```bash
 cp deploy.env.example deploy.env
-# Edita deploy.env con tus valores
+# Edit deploy.env with your values
 ```
 
-Las API keys (`MOLTBOOK_API_KEY`, `ANTHROPIC_API_KEY`) **no van en `deploy.env`** — se gestionan en Secret Manager.
+API keys (`MOLTBOOK_API_KEY`, `ANTHROPIC_API_KEY`) **do not go in `deploy.env`** — they are managed via Secret Manager.
 
 ---
 
-## Despliegue en GCP
+## Deploying to GCP
 
-### Pre-requisitos
+### Prerequisites
 
-- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) instalado y autenticado
-- Proyecto GCP con facturación activa
-- Cuenta en [Moltbook](https://www.moltbook.com) con API key
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed and authenticated
+- GCP project with billing enabled
+- [Moltbook](https://www.moltbook.com) account with an API key
 
-### Paso a paso
+### Step by step
 
 ```bash
-# 1. Configura tu deploy.env
+# 1. Set up your deploy.env
 cp deploy.env.example deploy.env
-# edita con tu GCP_PROJECT_ID, REGION, AGENT_NAME, etc.
+# edit with your GCP_PROJECT_ID, REGION, AGENT_NAME, etc.
 
-# 2. Despliega (construye imagen, crea Cloud Run, configura Scheduler)
+# 2. Deploy (builds image, creates Cloud Run service, sets up Scheduler)
 ./deploy.sh
 
-# 3. Actualiza los secrets en Secret Manager con tus API keys reales
+# 3. Update the secrets in Secret Manager with your real API keys
 #    https://console.cloud.google.com/security/secret-manager
 ```
 
-El script `deploy.sh` se encarga de:
-1. Habilitar las APIs necesarias de GCP
-2. Crear la Service Account con los permisos mínimos
-3. Crear el repositorio en Artifact Registry
-4. Crear los secrets vacíos en Secret Manager (tú los rellenas)
-5. Construir y publicar la imagen Docker via Cloud Build
-6. Desplegar el servicio en Cloud Run
-7. Configurar Cloud Scheduler para el heartbeat cada 5 min
+The `deploy.sh` script takes care of:
+1. Enabling the required GCP APIs
+2. Creating the Service Account with least-privilege permissions
+3. Creating the Artifact Registry repository
+4. Creating empty secrets in Secret Manager (you fill them in)
+5. Building and pushing the Docker image via Cloud Build
+6. Deploying the service to Cloud Run
+7. Setting up Cloud Scheduler for the heartbeat every 5 minutes
 
 ---
 
-## Desarrollo local
+## Local development
 
 ```bash
 cd agent
 
-# Crea y activa el entorno virtual
+# Create and activate the virtual environment
 python -m venv .venv
 source .venv/bin/activate
 
-# Instala dependencias
+# Install dependencies
 pip install -r requirements.txt
 
-# Crea tu .env (ver sección de variables de entorno)
-cp ../.env.example .env   # o créalo manualmente
+# Create your .env (see environment variables section above)
+cp ../.env.example .env   # or create it manually
 
-# Arranca el servidor
+# Start the server
 uvicorn main:app --reload --port 8080
 ```
 
-Endpoints disponibles:
-- `GET  /health` — estado del servicio
-- `POST /heartbeat` — dispara un ciclo completo del agente
+Available endpoints:
+- `GET  /health` — service health check
+- `POST /heartbeat` — triggers a full agent cycle
 
 ---
 
-## Seguridad
+## Security
 
-| Secreto | Dónde se guarda |
+| Secret | Where it's stored |
 |---|---|
 | `MOLTBOOK_API_KEY` | GCP Secret Manager |
 | `ANTHROPIC_API_KEY` | GCP Secret Manager |
-| `GCP_PROJECT_ID` | `deploy.env` (local, en `.gitignore`) |
+| `GCP_PROJECT_ID` | `deploy.env` (local only, in `.gitignore`) |
 
-El servicio Cloud Run corre con **`--no-allow-unauthenticated`** — solo Cloud Scheduler (con OIDC) puede invocarlo.
+The Cloud Run service runs with **`--no-allow-unauthenticated`** — only Cloud Scheduler (via OIDC) can invoke it.
