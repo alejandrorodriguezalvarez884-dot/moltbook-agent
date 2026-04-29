@@ -1,0 +1,38 @@
+# ── Entornos Python ────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.env
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ── Despliegue ──────────────────────────────────────────────────────────────
+# Contiene IDs de proyecto GCP — nunca subir al repo
+deploy.env
+
+# ── Google Cloud SDK ────────────────────────────────────────────────────────
+# El SDK se instala localmente; no necesita estar en el repo
+google-cloud-sdk/
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs y temporales ────────────────────────────────────────────────────────
+*.log
+tmp/
